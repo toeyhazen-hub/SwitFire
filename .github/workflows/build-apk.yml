@@ -1,0 +1,38 @@
+name: Build GameLens APK
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: แตกไฟล์โปรเจกต์ (ถ้าอัปโหลดมาเป็น zip)
+        run: |
+          if ! find . -name settings.gradle.kts | grep -q .; then
+            for z in *.zip; do unzip -q -o "$z"; done
+          fi
+          DIR=$(dirname "$(find . -name settings.gradle.kts | head -1)")
+          echo "PROJECT_DIR=$DIR" >> "$GITHUB_ENV"
+          echo "โปรเจกต์อยู่ที่: $DIR"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: สร้างไฟล์ APK
+        run: |
+          cd "$PROJECT_DIR"
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+          mkdir -p "$GITHUB_WORKSPACE/output"
+          cp app/build/outputs/apk/release/*.apk "$GITHUB_WORKSPACE/output/GameLens.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GameLens-APK
+          path: output/GameLens.apk
