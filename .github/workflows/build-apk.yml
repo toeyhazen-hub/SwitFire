@@ -1,4 +1,4 @@
-name: Build GameLens APK
+name: Build SwitFire APK
 
 on:
   push:
@@ -28,11 +28,19 @@ jobs:
         run: |
           cd "$PROJECT_DIR"
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --stacktrace
+          set -o pipefail
+          ./gradlew assembleRelease --no-daemon 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
           mkdir -p "$GITHUB_WORKSPACE/output"
-          cp app/build/outputs/apk/release/*.apk "$GITHUB_WORKSPACE/output/GameLens.apk"
+          cp app/build/outputs/apk/release/*.apk "$GITHUB_WORKSPACE/output/SwitFire.apk"
+
+      - name: สรุป error (ทำงานเฉพาะตอน build ไม่ผ่าน)
+        if: failure()
+        run: |
+          echo "=============== บรรทัด error ที่ต้องแก้ ==============="
+          grep -E "^e: |^w: .*error|error:" "$GITHUB_WORKSPACE/build.log" | head -40 || echo "ไม่พบบรรทัด error แบบ Kotlin"
+          echo "===================================================="
 
       - uses: actions/upload-artifact@v4
         with:
-          name: GameLens-APK
-          path: output/GameLens.apk
+          name: SwitFire-APK
+          path: output/SwitFire.apk
